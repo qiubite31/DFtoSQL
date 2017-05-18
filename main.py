@@ -19,12 +19,13 @@ def main():
     table_name = 'FRIEND'
 
     from df2sql import to_insert_sql, to_update_sql
-    # to_insert_sql(df, select_cols, table_name, bind=False)
-    # to_insert_sql(df, select_cols, table_name, bind=True)
+    to_insert_sql(df, select_cols, table_name, bind=False)
+    to_insert_sql(df, select_cols, table_name, bind=True)
 
     pri_key = ['NAME', 'AGE']
     select_cols = ['NAME', 'AGE', 'GENDER', 'TAKE']
     to_update_sql(df, pri_key, select_cols, table_name, bind=False)
+    to_update_sql(df, pri_key, select_cols, table_name, bind=True)
 
     # cols_str = reduce(lambda m, n: m + ',' + n, select_cols)
     pass

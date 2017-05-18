@@ -36,7 +36,10 @@ def to_update_sql(df, pri_cols, cols, table, bind=False):
         for idx, pri_data in enumerate(pri_cols.items()):
             pri_col = pri_data[0]
             pri_val = "'{}'".format(pri_data[1]) if isinstance(pri_data[1], str) else pri_data[1]
-            partial_key = '  AND {} = {}'.format(pri_col, pri_val)
+            if bind:
+                partial_key = '  AND {} = {}'.format(pri_col, ':' + pri_col)
+            else:
+                partial_key = '  AND {} = {}'.format(pri_col, pri_val)
             pri_key_str += partial_key
             pri_key_str += '\n     ' if idx + 1 != len(pri_cols) else ''
 
@@ -44,7 +47,14 @@ def to_update_sql(df, pri_cols, cols, table, bind=False):
         for idx, set_data in enumerate(set_cols.items()):
             set_col = set_data[0]
             set_value = "'{}'".format(set_data[1]) if isinstance(set_data[1], str) else set_data[1]
-            partial_set = '{} = {}'.format(set_col, set_value)
+            if bind:
+                partial_set = '{} = {}'.format(set_col, ':' + set_col)
+            else:
+                partial_set = '{} = {}'.format(set_col, set_value)
             set_val_str += partial_set
             set_val_str += ',\n           ' if idx + 1 != len(set_cols) else ''
+
         print(update_sql.format(table=table, cols=set_val_str, pri_key=pri_key_str))
+        if bind:
+            bind_var = dict(zip(cols, row))
+            print(bind_var)
