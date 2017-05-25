@@ -4,23 +4,24 @@ import pandas as pd
 def to_insert_sql(df, cols, table, bind=False):
     template_sql = """
     INSERT INTO {table} ({column})
-    VALUES ({value})"""
-    insert_sql = None
+    VALUES ({value});"""
+    insert_sql = """    BEGIN{all_insert}
+    END;"""
     cols_str = ', '.join(cols)
     for row in df[cols].itertuples(index=False, name=False):
         if bind:
             bind_val_str = ', '.join([':' + x for x in cols])
             bind_var = dict(zip(cols, row))
+            all_insert = template_sql.format(table=table, column=cols_str, value=bind_val_str)
+            insert_sql = insert_sql.format(all_insert=all_insert)
+            print(insert_sql)
+            print(bind_var)
         else:
             pur_val_str = str(row)
-            pur_val_str = pur_val_str.replace("(", '')
-            pur_val_str = pur_val_str.replace(")", '')
-
-        val_str = bind_val_str if bind else pur_val_str
-        insert_sql = template_sql.format(table=table, column=cols_str, value=val_str)
-
-        print(insert_sql)
-        print(bind_var if bind else '', end="")
+            pur_val_str = pur_val_str.replace("(", '').replace(")", '')
+            all_insert = template_sql.format(table=table, column=cols_str, value=pur_val_str)
+            insert_sql = insert_sql.format(all_insert=all_insert)
+            print(insert_sql)
 
 
 def to_update_sql(df, pri_cols, cols, table, bind=False):
@@ -28,8 +29,9 @@ def to_update_sql(df, pri_cols, cols, table, bind=False):
     UPDATE {table}
        SET {cols}
      WHERE 1=1
-     {pri_key}"""
-    update_sql = None
+     {pri_key};"""
+    update_sql = """    BEGIN{all_update}
+    END;"""
     for row in df[cols].itertuples(index=False):
         row_dict = row._asdict()
         pri_cols = {k: v for k, v in row_dict.items() if k in pri_cols}
@@ -53,7 +55,8 @@ def to_update_sql(df, pri_cols, cols, table, bind=False):
             set_val_str += partial_set
             set_val_str += ',\n           ' if idx + 1 != len(set_cols) else ''
 
-        update_sql = template_sql.format(table=table, cols=set_val_str, pri_key=pri_key_str)
+        all_update = template_sql.format(table=table, cols=set_val_str, pri_key=pri_key_str)
+        update_sql = update_sql.format(all_update=all_update)
         bind_var = dict(row_dict)
         print(update_sql)
         print(bind_var if bind else '', end="")
