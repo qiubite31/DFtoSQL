@@ -19,7 +19,15 @@ def to_insert_sql(df, cols, table, bind=False, chunksize=100):
             print(bind_var)
         else:
             pur_val_str = str(row)
-            pur_val_str = pur_val_str.replace("(", '').replace(")", '')
+            # 去頭去尾，去掉tuple的括號
+            val_str = val_str[1:-1]
+            # 把item拆解出來，如果是timestamp就去掉刮號
+            val_list = val_str.split(',')
+            val_list = [x.replace("(", '').replace(")", '')
+                        if 'TIMESTAMP' in x.upper() else x
+                        for x in val_list]
+            pur_val_str = ', '.join(val_list)
+            
             all_insert += template_sql.format(table=table, column=cols_str, value=pur_val_str)
             if (idx+1) % chunksize == 0 or idx == len(df.index)-1:
                 print(insert_sql.format(all_insert=all_insert))
