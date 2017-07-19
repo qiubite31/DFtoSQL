@@ -20,7 +20,8 @@ def to_insert_sql(df, cols, table, bind=False, chunksize=100):
         else:
             pur_val_str = str(row)
             # 去頭去尾，去掉tuple的括號
-            val_str = val_str[1:-1]
+            # 如果tuple只有一個item要多去掉一個,
+            val_str = val_str[1:-1] if len(row) > 1 else val_str[1:-2]
             # 把item拆解出來，如果是timestamp就去掉刮號
             val_list = val_str.split(',')
             val_list = [x.replace("(", '').replace(")", '')
