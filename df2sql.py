@@ -13,6 +13,9 @@ def to_insert_sql(df, cols, table, bind=False, chunksize=100):
         if bind:
             bind_val_str = ', '.join([':' + x for x in cols])
             bind_var = dict(zip(cols, row))
+            # 把nan取代成NULL
+            for col, value in bind_var.items():
+                bind_var[col] = '' if str(value) == 'nan' else value
             all_insert = template_sql.format(table=table, column=cols_str, value=bind_val_str)
             insert_sql = insert_sql.format(all_insert=all_insert)
             print(insert_sql)
@@ -28,7 +31,8 @@ def to_insert_sql(df, cols, table, bind=False, chunksize=100):
                         if 'TIMESTAMP' in x.upper() else x
                         for x in val_list]
             pur_val_str = ', '.join(val_list)
-            
+            # 把nan取代成NULL
+            pur_val_str = pur_val_str.replace('nan', 'NULL')
             all_insert += template_sql.format(table=table, column=cols_str, value=pur_val_str)
             if (idx+1) % chunksize == 0 or idx == len(df.index)-1:
                 print(insert_sql.format(all_insert=all_insert))
@@ -55,6 +59,8 @@ def to_update_sql(df, pri_cols, cols, table, bind=False, chunksize=100):
             pri_val = "'{}'".format(pri_data[1]) if isinstance(pri_data[1], str) else pri_data[1]
             select_pri_val = ':' + pri_col if bind else pri_val
             partial_key = '  AND {} = {}'.format(pri_col, select_pri_val)
+            # 把nan取代成NULL
+            partial_key = partial_key.replace('nan', 'NULL')
             pri_key_str += partial_key
             pri_key_str += '\n     ' if pri_idx + 1 != len(pri_cols) else ''
 
@@ -64,6 +70,8 @@ def to_update_sql(df, pri_cols, cols, table, bind=False, chunksize=100):
             set_val = "'{}'".format(set_data[1]) if isinstance(set_data[1], str) else set_data[1]
             select_set_val = ':' + set_col if bind else set_val
             partial_set = '{} = {}'.format(set_col, select_set_val)
+            # 把nan取代成NULL
+            partial_set = partial_set.replace('nan', 'NULL')
             set_val_str += partial_set
             set_val_str += ',\n           ' if set_idx + 1 != len(set_cols) else ''
 
@@ -71,6 +79,9 @@ def to_update_sql(df, pri_cols, cols, table, bind=False, chunksize=100):
             all_update = template_sql.format(table=table, cols=set_val_str, pri_key=pri_key_str)
             update_sql = update_sql.format(all_update=all_update)
             bind_var = dict(row_dict)
+            # 把nan取代成NULL
+            for col, value in bind_var.items():
+                bind_var[col] = '' if str(value) == 'nan' else value
             print(update_sql)
             print(bind_var)
         else:
