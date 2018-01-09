@@ -89,3 +89,18 @@ def to_update_sql(df, pri_cols, cols, table, bind=False, chunksize=100):
             if (idx+1) % chunksize == 0 or idx == len(df.index)-1:
                 print(update_sql.format(all_update=all_update))
                 all_update = ''
+
+ def _print_sql(self, sql, params):
+    if not params:
+        print(sql)
+    else:
+        params = {k: "'" + v + "'" if isinstance(v, str) else v
+                  for k, v in params.items()}
+        params_loc = re.findall('(?<= ):(?!MI|SS|mi|ss)\w+', sql)
+        for loc in params_loc:
+            sql = sql.replace(loc, '{' + loc[1:] + '}')
+        sql = sql.format(**params)
+        # 處理null
+        sql = sql.replace("''", 'NULL')
+        sql = sql.replace("'NULL'", 'NULL')
+        print(sql)               
