@@ -4,38 +4,49 @@ import pandas as pd
 def to_insert_sql(df, cols, table, bind=False, chunksize=100):
     template_sql = """
     INSERT INTO {table} ({column})
-    VALUES ({value});"""
-    insert_sql = """    BEGIN{all_insert}
+    VALUES ( {value});"""
+    insert_sql = """        BEGIN{all_insert}
     END;"""
+
     all_insert = ''
-    cols_str = ', '.join(cols)
+    # 要把col name用雙引號括起來，避免col name有空格
+    cols_str = ', '.join(['"' + col + '"' for col in cols])
     for idx, row in enumerate(df[cols].itertuples(index=False, name=False)):
         if bind:
             bind_val_str = ', '.join([':' + x for x in cols])
             bind_var = dict(zip(cols, row))
             # 把nan取代成NULL
             for col, value in bind_var.items():
-                bind_var[col] = '' if str(value) == 'nan' else value
+                if 'TIMESTAMP' in repr(value).upper():
+                    bind_var[col] = repr(value).replace("(", '').replace(")", '')
+                elif 'nan' in str(value):
+                    bind_var[col] = 'NULL'
+                elif 'NaT' in str(value):
+                    bind_var[col] = 'NULL'
+                else:
+                    bind_var[col] = value
             all_insert = template_sql.format(table=table, column=cols_str, value=bind_val_str)
             insert_sql = insert_sql.format(all_insert=all_insert)
             print(insert_sql)
             print(bind_var)
         else:
-            pur_val_str = str(row)
-            # 去頭去尾，去掉tuple的括號
-            # 如果tuple只有一個item要多去掉一個,
-            val_str = val_str[1:-1] if len(row) > 1 else val_str[1:-2]
-            # 把item拆解出來，如果是timestamp就去掉刮號
-            val_list = val_str.split(',')
-            val_list = [x.replace("(", '').replace(")", '')
-                        if 'TIMESTAMP' in x.upper() else x
-                        for x in val_list]
+            val_list = []
+            for val_str in '<br thIsfOrrEplAcE/>'.join(repr(_) for _ in row).split('<br thIsfOrrEplAcE/>'):
+                if 'TIMESTAMP' in val_str.upper():
+                    val_list.append(val_str.replace("(", '').replace(")", ''))
+                elif 'nan' in val_str:
+                    val_list.append('NULL')
+                elif 'NaT' in val_str:
+                    val_list.append('NULL')
+                else:
+                    val_list.append(val_str)
+
             pur_val_str = ', '.join(val_list)
-            # 把nan取代成NULL
-            pur_val_str = pur_val_str.replace('nan', 'NULL')
+
             all_insert += template_sql.format(table=table, column=cols_str, value=pur_val_str)
             if (idx+1) % chunksize == 0 or idx == len(df.index)-1:
-                print(insert_sql.format(all_insert=all_insert))
+                insert_sql_str = insert_sql.format(all_insert=all_insert)
+                print(insert_sql_str)
                 all_insert = ''
 
 
